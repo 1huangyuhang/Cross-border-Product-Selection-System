@@ -1,0 +1,15 @@
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/Application.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/config/ProjectSimpleConfig.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/controller/AlgorithmController.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/controller/AnalysisController.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/controller/CrawlerController.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/controller/ProductController.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/entity/Product.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/entity/User.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/entity/UserInteraction.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/repository/ProductRepository.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/repository/UserInteractionRepository.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/repository/UserRepository.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/scheduler/CrawlerScheduler.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/service/CrawlerService.java
+/Users/huangyuhang/Documents/我的项目/代码项目/Python/代码/代码测试/练习/trae/爬虫/跨境电商选品系统-最小可行性方案/program/backend/src/main/java/com/project/service/ProductService.java

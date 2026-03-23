@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跨境电商选品系统 - 数据分析平台</title>
+    
+    <!-- 引入 Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- 引入 Element Plus UI 库 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/element-plus"></script>
+    
+    <!-- 引入 Chart.js 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 引入 ECharts 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <!-- 引入 Axios 用于HTTP请求 -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- 引入 Font Awesome 图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 引入自定义样式文件 -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- 引入配置文件 -->
+    <script src="config.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 加载遮罩 -->
+        <div v-if="loading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+        </div>
+        
+        <div class="app-container">
+            <!-- 侧边栏 -->
+            <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+                <div class="sidebar-header">
+                    <div class="logo" v-show="!sidebarCollapsed">
+                        <i class="fas fa-chart-line"></i>
+                        选品系统
+                    </div>
+                    <button class="sidebar-toggle" @click="toggleSidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+                
+                <nav class="sidebar-menu">
+                    <a href="#" class="menu-item" :class="{ active: currentPage === 'dashboard' }" @click="navigateTo('dashboard')">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span class="menu-text">仪表盘</span>
+                    </a>
+                    <a href="#" class="menu-item" :class="{ active: currentPage === 'data' }" @click="navigateTo('data')">
+                        <i class="fas fa-database"></i>
+                        <span class="menu-text">数据管理</span>
+                    </a>
+                    <a href="#" class="menu-item" :class="{ active: currentPage === 'crawler' }" @click="navigateTo('crawler')">
+                        <i class="fas fa-spider"></i>
+                        <span class="menu-text">爬虫管理</span>
+                    </a>
+                    <a href="#" class="menu-item" :class="{ active: currentPage === 'analysis' }" @click="navigateTo('analysis')">
+                        <i class="fas fa-chart-bar"></i>
+                        <span class="menu-text">数据分析</span>
+                    </a>
+                    <a href="#" class="menu-item" :class="{ active: currentPage === 'products' }" @click="navigateTo('products')">
+                        <i class="fas fa-box"></i>
+                        <span class="menu-text">商品管理</span>
+                    </a>
+                    <a href="#" class="menu-item" :class="{ active: currentPage === 'settings' }" @click="navigateTo('settings')">
+                        <i class="fas fa-cog"></i>
+                        <span class="menu-text">系统设置</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- 主内容区域 -->
+            <div class="main-content">
+                <!-- 顶部导航栏 -->
+                <div class="top-bar">
+                    <h1 class="page-title">{{ getPageTitle() }}</h1>
+                    <div class="user-info">
+                        <button class="notification-btn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" v-if="notifications > 0">{{ notifications }}</span>
+                        </button>
+                        <div class="user-avatar">
+                            <i class="fas fa-user-circle" style="font-size: 24px; color: #667eea;"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 内容区域 -->
+                <div class="content-area">
+                    <!-- 仪表盘页面 -->
+                    <div v-if="currentPage === 'dashboard'" class="dashboard">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div class="stat-value">{{ stats.totalProducts }}</div>
+                                <div class="stat-label">商品总数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="stat-value">{{ stats.totalSales }}</div>
+                                <div class="stat-label">总销量</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="stat-value">${{ stats.avgPrice }}</div>
+                                <div class="stat-label">平均价格</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="stat-value">{{ stats.avgRating }}</div>
+                                <div class="stat-label">平均评分</div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">系统概览</h3>
+                            </div>
+                            <div class="card-body">
+                                <p>欢迎使用跨境电商选品系统！这是一个基于数据驱动的智能选品平台，帮助您发现市场机会，优化产品策略。</p>
+                                <div style="margin-top: 20px;">
+                                    <button class="btn btn-primary" @click="navigateTo('data')">
+                                        <i class="fas fa-database"></i>
+                                        查看数据
+                                    </button>
+                                    <button class="btn btn-success" @click="navigateTo('analysis')" style="margin-left: 10px;">
+                                        <i class="fas fa-chart-bar"></i>
+                                        开始分析
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 数据管理页面 -->
+                    <div v-if="currentPage === 'data'" class="data-management">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">数据库表管理</h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="margin-bottom: 20px;">
+                                    <button class="btn btn-primary" @click="refreshTables" :disabled="loadingTables">
+                                        <i class="fas fa-sync-alt"></i>
+                                        刷新表列表
+                                    </button>
+                                </div>
+                                
+                                <div v-if="tables.length > 0">
+                                    <h4>可用的数据库表：</h4>
+                                    <div class="table-responsive">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>表名</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="table in tables" :key="table">
+                                                    <td>{{ table }}</td>
+                                                    <td>
+                                                        <button class="btn btn-primary" @click="viewTableData(table)">
+                                                            <i class="fas fa-eye"></i>
+                                                            查看数据
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div v-else-if="!loadingTables" class="text-center" style="padding: 40px;">
+                                    <i class="fas fa-database" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                                    <p>暂无数据库表，请检查数据库连接</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 爬虫管理页面 -->
+                    <div v-if="currentPage === 'crawler'" class="crawler-management">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">爬虫管理</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="crawler-controls">
+                                    <button class="btn btn-success" @click="startCrawler" :disabled="crawlerRunning">
+                                        <i class="fas fa-play"></i>
+                                        启动爬虫
+                                    </button>
+                                    <button class="btn btn-warning" @click="pauseCrawler" :disabled="!crawlerRunning">
+                                        <i class="fas fa-pause"></i>
+                                        暂停爬虫
+                                    </button>
+                                    <button class="btn btn-danger" @click="stopCrawler" :disabled="!crawlerRunning">
+                                        <i class="fas fa-stop"></i>
+                                        停止爬虫
+                                    </button>
+                                </div>
+                                
+                                <div v-if="crawlerStatus" class="crawler-status" style="margin-top: 20px;">
+                                    <h4>爬虫状态：</h4>
+                                    <p>状态：<span :class="crawlerStatus.running ? 'text-success' : 'text-danger'">
+                                        {{ crawlerStatus.running ? '运行中' : '已停止' }}
+                                    </span></p>
+                                    <p>已爬取商品：{{ crawlerStatus.productsCrawled }}</p>
+                                    <p>当前关键词：{{ crawlerStatus.currentKeyword }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 数据分析页面 -->
+                    <div v-if="currentPage === 'analysis'" class="data-analysis">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">数据分析</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="analysis-controls">
+                                    <button class="btn btn-primary" @click="startAnalysis" :disabled="analysisLoading">
+                                        <i class="fas fa-chart-bar"></i>
+                                        开始分析
+                                    </button>
+                                    <button class="btn btn-success" @click="loadSampleData" :disabled="sampleLoading">
+                                        <i class="fas fa-download"></i>
+                                        加载示例数据
+                                    </button>
+                                </div>
+                                
+                                <div v-if="analysisResult" class="analysis-results">
+                                    <h4>分析结果：</h4>
+                                    <div class="chart-container">
+                                        <div class="chart-title">价格分布</div>
+                                        <canvas ref="priceChart" width="400" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 商品管理页面 -->
+                    <div v-if="currentPage === 'products'" class="product-management">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">商品管理</h3>
+                            </div>
+                            <div class="card-body">
+                                <p>商品管理功能开发中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 系统设置页面 -->
+                    <div v-if="currentPage === 'settings'" class="system-settings">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">系统设置</h3>
+                            </div>
+                            <div class="card-body">
+                                <p>系统设置功能开发中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入自定义JavaScript文件 -->
+    <script src="app.js"></script>
+</body>
+</html>

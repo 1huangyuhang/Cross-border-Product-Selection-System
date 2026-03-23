@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <title>PostgreSQL数据库表数据查看器 - 数据分析平台</title>
+    <!-- 引入 Vue.js 库 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- 引入 Element Plus UI 库 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/element-plus"></script>
+    <!-- 引入 Chart.js 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 ECharts 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        /* 基础样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 {
+            color: #1890ff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 500;
+        }
+        .main-content {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .table-selector {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .table-selector .el-select {
+            width: 300px;
+            margin-right: 15px;
+        }
+        .loading-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #909399;
+        }
+        .table-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f0f9ff;
+            border: 1px solid #bae7ff;
+            border-radius: 4px;
+        }
+        .table-info .table-name {
+            font-weight: 500;
+            color: #1890ff;
+        }
+        .table-info .table-stats {
+            color: #666;
+        }
+        
+        /* 数据分析样式 */
+        .analysis-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .analysis-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #303133;
+        }
+        
+        .analysis-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .chart-item {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .keyword-cloud {
+            height: 300px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .keyword-tag {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 3px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .keyword-tag:hover {
+            transform: scale(1.1);
+        }
+        
+        .analysis-loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .analysis-error {
+            text-align: center;
+            padding: 20px;
+            color: #f56c6c;
+            background-color: #fef0f0;
+            border: 1px solid #fbc4c4;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Vue 应用容器 -->
+    <div id="app">
+        <!-- 全局加载遮罩 -->
+        <div v-if="globalLoading" class="loading-mask">
+            <el-loading v-loading="globalLoading" element-loading-text="数据加载中..." element-loading-background="rgba(255, 255, 255, 0.8)">
+                <div style="width: 100px; height: 100px;"></div>
+            </el-loading>
+        </div>
+
+        <div class="container">
+            <!-- 页头 -->
+            <div class="header">
+                <h1>PostgreSQL数据库表数据查看器</h1>
+            </div>
+
+            <!-- 主要内容 -->
+            <div class="main-content">
+                <!-- 表格选择区域 -->
+                <div class="section">
+                    <h2 style="font-size: 18px; margin-bottom: 15px; color: #303133;">选择数据库表</h2>
+                    <div class="table-selector">
+                        <el-select v-model="selectedTable" placeholder="请选择数据库表" @change="onTableSelect">
+                            <el-option v-for="table in tables" :key="table" :label="table" :value="table"></el-option>
+                        </el-select>
+                        <el-button type="primary" @click="refreshTables" :loading="loadingTables">
+                            <el-icon><Refresh /></el-icon>刷新表列表
+                        </el-button>
+                    </div>
+                </div>
+
+                <!-- 表信息区域 -->
+                <div v-if="currentTableData" class="table-info">
+                    <div class="table-name">{{ selectedTable }}</div>
+                    <div class="table-stats">
+                        字段数: {{ currentTableData.columns.length }} | 数据行数: {{ currentTableData.data.length }}
+                    </div>
+                </div>
+
+                <!-- 表结构信息 -->
+                <div v-if="currentTableData" class="section">
+                    <h2 style="font-size: 18px; margin-bottom: 15px; color: #303133;">表结构</h2>
+                    <el-table :data="currentTableData.columns" style="width: 100%">
+                        <el-table-column prop="name" label="字段名" width="180"></el-table-column>
+                        <el-table-column prop="type" label="数据类型" width="180"></el-table-column>
+                        <el-table-column prop="nullable" label="是否可为空" width="120">
+                            <template #default="scope">
+                                <el-tag v-if="scope.row.nullable" type="success">是</el-tag>
+                                <el-tag v-else type="danger">否</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="default" label="默认值" width="120"></el-table-column>
+                    </el-table>
+                </div>
+
+                <!-- 表数据区域 -->
+                <div v-if="currentTableData" class="section">
+                    <h2 style="font-size: 18px; margin-bottom: 15px; color: #303133;">表数据</h2>
+                    <div v-if="currentTableData.data.length === 0" class="no-data">
+                        <el-empty description="暂无数据"></el-empty>
+                    </div>
+                    <el-table v-else :data="currentTableData.data" style="width: 100%" border>
+                        <el-table-column v-for="col in currentTableData.columns" :key="col.name" :prop="col.name" :label="col.name">
+                            <template #default="scope">
+                                <div v-if="typeof scope.row[col.name] === 'object' && scope.row[col.name] !== null">
+                                    {{ JSON.stringify(scope.row[col.name]) }}
+                                </div>
+                                <div v-else-if="scope.row[col.name] === null">
+                                    <span style="color: #909399;">NULL</span>
+                                </div>
+                                <div v-else>
+                                    {{ scope.row[col.name] }}
+                                </div>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <!-- 无选择表提示 -->
+                <div v-else-if="tables.length > 0" class="no-data">
+                    <el-empty description="请选择一个表查看数据"></el-empty>
+                </div>
+
+                <!-- 数据库连接错误提示 -->
+                <div v-else-if="errorMessage" class="no-data">
+                    <el-alert :title="'错误'" :message="errorMessage" type="error" :closable="false" show-icon></el-alert>
+                </div>
+
+                <!-- 数据分析区域 -->
+                <div v-if="currentTableData && currentTableData.data.length > 0" class="analysis-section">
+                    <h2 style="font-size: 20px; margin-bottom: 20px; color: #303133; display: flex; align-items: center;">
+                        <el-icon style="margin-right: 8px;"><TrendCharts /></el-icon>
+                        商品数据分析
+                    </h2>
+                    
+                    <!-- 分析控制按钮 -->
+                    <div class="analysis-controls">
+                        <el-button type="primary" @click="startAnalysis" :loading="analysisLoading">
+                            <el-icon><DataAnalysis /></el-icon>
+                            开始数据分析
+                        </el-button>
+                        <el-button @click="loadSampleData" :loading="sampleLoading">
+                            <el-icon><Document /></el-icon>
+                            加载示例数据
+                        </el-button>
+                        <el-button @click="exportAnalysis" v-if="analysisResult">
+                            <el-icon><Download /></el-icon>
+                            导出分析报告
+                        </el-button>
+                        <el-button @click="testAnalysis" type="success">
+                            <el-icon><DataAnalysis /></el-icon>
+                            测试分析功能
+                        </el-button>
+                    </div>
+
+                    <!-- 分析结果展示 -->
+                    <div v-if="analysisResult">
+                        <!-- 基础统计卡片 -->
+                        <div class="analysis-stats">
+                            <div class="stat-card">
+                                <h3>{{ analysisResult.basic_stats.total_products }}</h3>
+                                <p>商品总数</p>
+                            </div>
+                            <div class="stat-card" v-if="analysisResult.price_analysis.mean_price">
+                                <h3>${{ analysisResult.price_analysis.mean_price.toFixed(2) }}</h3>
+                                <p>平均价格</p>
+                            </div>
+                            <div class="stat-card" v-if="analysisResult.sales_analysis.avg_sales">
+                                <h3>{{ Math.round(analysisResult.sales_analysis.avg_sales) }}</h3>
+                                <p>平均销量</p>
+                            </div>
+                            <div class="stat-card" v-if="analysisResult.rating_analysis.avg_rating">
+                                <h3>{{ analysisResult.rating_analysis.avg_rating.toFixed(1) }}⭐</h3>
+                                <p>平均评分</p>
+                            </div>
+                        </div>
+
+                        <!-- 图表展示区域 -->
+                        <div class="chart-grid">
+                            <!-- 价格分布图表 -->
+                            <div class="chart-item">
+                                <div class="chart-title">价格分布</div>
+                                <canvas ref="priceChart" width="400" height="300"></canvas>
+                            </div>
+
+                            <!-- 销量分布图表 -->
+                            <div class="chart-item">
+                                <div class="chart-title">销量分布</div>
+                                <canvas ref="salesChart" width="400" height="300"></canvas>
+                            </div>
+
+                            <!-- 评分分布图表 -->
+                            <div class="chart-item">
+                                <div class="chart-title">评分分布</div>
+                                <canvas ref="ratingChart" width="400" height="300"></canvas>
+                            </div>
+
+                            <!-- 关键词云 -->
+                            <div class="chart-item">
+                                <div class="chart-title">关键词云</div>
+                                <div class="keyword-cloud">
+                                    <span 
+                                        v-for="keyword in analysisResult.chart_data.keyword_cloud" 
+                                        :key="keyword.text"
+                                        class="keyword-tag"
+                                        :style="{ fontSize: Math.max(12, keyword.weight * 2) + 'px' }"
+                                    >
+                                        {{ keyword.text }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 趋势预测和建议 -->
+                        <div v-if="analysisResult.predictions" class="chart-container">
+                            <div class="chart-title">市场趋势预测</div>
+                            <el-row :gutter="20">
+                                <el-col :span="8">
+                                    <el-card>
+                                        <template #header>
+                                            <span>市场机会</span>
+                                        </template>
+                                        <el-tag :type="getOpportunityType(analysisResult.predictions.market_opportunity)">
+                                            {{ getOpportunityText(analysisResult.predictions.market_opportunity) }}
+                                        </el-tag>
+                                    </el-card>
+                                </el-col>
+                                <el-col :span="8">
+                                    <el-card>
+                                        <template #header>
+                                            <span>价格竞争力</span>
+                                        </template>
+                                        <el-tag :type="getCompetitivenessType(analysisResult.predictions.price_competitiveness)">
+                                            {{ getCompetitivenessText(analysisResult.predictions.price_competitiveness) }}
+                                        </el-tag>
+                                    </el-card>
+                                </el-col>
+                                <el-col :span="8">
+                                    <el-card>
+                                        <template #header>
+                                            <span>质量指标</span>
+                                        </template>
+                                        <el-tag :type="getQualityType(analysisResult.predictions.quality_indicators)">
+                                            {{ getQualityText(analysisResult.predictions.quality_indicators) }}
+                                        </el-tag>
+                                    </el-card>
+                                </el-col>
+                            </el-row>
+                            
+                            <!-- 建议列表 -->
+                            <div v-if="analysisResult.predictions.recommendations && analysisResult.predictions.recommendations.length > 0" style="margin-top: 20px;">
+                                <h4>建议措施：</h4>
+                                <ul>
+                                    <li v-for="recommendation in analysisResult.predictions.recommendations" :key="recommendation">
+                                        {{ recommendation }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 分析加载状态 -->
+                    <div v-if="analysisLoading" class="analysis-loading">
+                        <el-icon class="is-loading"><Loading /></el-icon>
+                        <p>正在分析数据，请稍候...</p>
+                    </div>
+
+                    <!-- 分析错误状态 -->
+                    <div v-if="analysisError" class="analysis-error">
+                        <el-icon><Warning /></el-icon>
+                        <p>{{ analysisError }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入 Vue 3 和 Element Plus 图标
+        const { createApp, ref, onMounted } = Vue;
+        const { ElMessage, ElMessageBox } = ElementPlus;
+        
+        // 定义所有需要的图标
+        const { 
+            Refresh, 
+            TrendCharts, 
+            DataAnalysis, 
+            Document, 
+            Download, 
+            Loading, 
+            Warning 
+        } = ElementPlus.ElIcon;
+        
+        // 创建 Vue 应用
+        const app = createApp({
+            components: {
+                Refresh,
+                TrendCharts,
+                DataAnalysis,
+                Document,
+                Download,
+                Loading,
+                Warning
+            },
+            setup() {
+                // 响应式数据
+                const tables = ref([]);
+                const selectedTable = ref('');
+                const currentTableData = ref(null);
+                const loadingTables = ref(false);
+                const loadingTableData = ref(false);
+                const globalLoading = ref(false);
+                const errorMessage = ref('');
+                
+                // 数据分析相关数据
+                const analysisResult = ref(null);
+                const analysisLoading = ref(false);
+                const analysisError = ref('');
+                const sampleLoading = ref(false);
+                
+                // 图表引用
+                const priceChart = ref(null);
+                const salesChart = ref(null);
+                const ratingChart = ref(null);
+                
+                // API 基础 URL
+                const API_BASE_URL = 'http://localhost:5002/api';
+                const ANALYSIS_API_URL = 'http://localhost:5003/api';
+                
+                // 刷新表列表
+                const refreshTables = async () => {
+                    try {
+                        loadingTables.value = true;
+                        globalLoading.value = true;
+                        errorMessage.value = '';
+                        
+                        console.log('正在请求表列表...', `${API_BASE_URL}/temu-tables`);
+                        
+                        const response = await fetch(`${API_BASE_URL}/temu-tables`);
+                        
+                        console.log('响应状态:', response.status, response.statusText);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log('获取到的数据:', data);
+                        
+                        tables.value = data.tables || [];
+                        
+                        // 如果有表但未选择，默认选择第一个
+                        if (tables.value.length > 0 && !selectedTable.value) {
+                            selectedTable.value = tables.value[0];
+                            onTableSelect(selectedTable.value);
+                        }
+                        
+                        ElMessage.success(`成功获取 ${tables.value.length} 个表`);
+                    } catch (error) {
+                        console.error('获取表列表出错：', error);
+                        errorMessage.value = `获取表列表失败：${error.message}`;
+                        ElMessage.error(`获取表列表失败：${error.message}`);
+                    } finally {
+                        loadingTables.value = false;
+                        globalLoading.value = false;
+                    }
+                };
+                
+                // 选择表后的处理
+                const onTableSelect = async (tableName) => {
+                    if (!tableName) {
+                        currentTableData.value = null;
+                        return;
+                    }
+                    
+                    try {
+                        loadingTableData.value = true;
+                        globalLoading.value = true;
+                        
+                        console.log('正在请求表数据...', `${API_BASE_URL}/table-data/${tableName}`);
+                        
+                        const response = await fetch(`${API_BASE_URL}/table-data/${tableName}`);
+                        
+                        console.log('响应状态:', response.status, response.statusText);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log('获取到的表数据:', data);
+                        
+                        // 确保数据格式正确
+                        if (data && data.data) {
+                            // API返回的数据结构是 {data: {columns: [...], data: [...]}}
+                            currentTableData.value = data.data;
+                            console.log('设置的表数据:', currentTableData.value);
+                        } else {
+                            throw new Error('数据格式不正确');
+                        }
+                        
+                        ElMessage.success(`成功加载表 ${tableName} 的数据 (${data.data?.length || 0} 条记录)`);
+                    } catch (error) {
+                        console.error('获取表数据出错：', error);
+                        ElMessage.error(`获取表数据失败：${error.message}`);
+                    } finally {
+                        loadingTableData.value = false;
+                        globalLoading.value = false;
+                    }
+                };
+                
+                // 开始数据分析
+                const startAnalysis = async () => {
+                    if (!currentTableData.value || !currentTableData.value.data.length) {
+                        ElMessage.warning('请先选择包含数据的表');
+                        return;
+                    }
+                    
+                    try {
+                        analysisLoading.value = true;
+                        analysisError.value = '';
+                        analysisResult.value = null;
+                        
+                        // 转换表数据为商品数据格式
+                        const products = currentTableData.value.data.map(row => {
+                            // 调试输出原始数据
+                            console.log('原始行数据:', row);
+                            
+                            // 智能字段映射 - 根据实际数据库字段调整
+                            const product = {
+                                title: row.title || row.name || row.product_name || row.item_name || row.item_title || '',
+                                price: row.price || row.cost || row.unit_price || row.current_price || row.sale_price || '',
+                                rating: row.rating || row.score || row.rating_score || row.avg_rating || row.star_rating || '',
+                                sales: row.sales || row.sold || row.sales_count || row.orders || row.total_sales || row.sold_count || '',
+                                link: row.link || row.url || row.product_url || row.item_url || row.detail_url || '',
+                                image: row.image || row.img || row.image_url || row.photo || row.main_image_url || row.thumbnail_url || ''
+                            };
+                            
+                            console.log('转换后的商品数据:', product);
+                            return product;
+                        }).filter(product => product.title); // 过滤掉没有标题的商品
+                        
+                        const response = await fetch(`${ANALYSIS_API_URL}/analyze-products`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ products })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('分析请求失败');
+                        }
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            analysisResult.value = result.data;
+                            ElMessage.success('数据分析完成');
+                            
+                            // 延迟渲染图表，确保DOM已更新
+                            setTimeout(() => {
+                                renderCharts();
+                            }, 100);
+                        } else {
+                            throw new Error(result.message || '分析失败');
+                        }
+                        
+                    } catch (error) {
+                        console.error('数据分析出错：', error);
+                        analysisError.value = `数据分析失败：${error.message}`;
+                        ElMessage.error(`数据分析失败：${error.message}`);
+                    } finally {
+                        analysisLoading.value = false;
+                    }
+                };
+                
+                // 加载示例数据
+                const loadSampleData = async () => {
+                    try {
+                        sampleLoading.value = true;
+                        analysisError.value = '';
+                        
+                        const response = await fetch(`${ANALYSIS_API_URL}/sample-data`);
+                        
+                        if (!response.ok) {
+                            throw new Error('获取示例数据失败');
+                        }
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            // 模拟表数据格式
+                            currentTableData.value = {
+                                columns: [
+                                    { name: 'title', type: 'text' },
+                                    { name: 'price', type: 'text' },
+                                    { name: 'rating', type: 'text' },
+                                    { name: 'sales', type: 'text' },
+                                    { name: 'link', type: 'text' },
+                                    { name: 'image', type: 'text' }
+                                ],
+                                data: result.data
+                            };
+                            
+                            ElMessage.success('示例数据加载成功');
+                        } else {
+                            throw new Error(result.message || '加载示例数据失败');
+                        }
+                        
+                    } catch (error) {
+                        console.error('加载示例数据出错：', error);
+                        ElMessage.error(`加载示例数据失败：${error.message}`);
+                    } finally {
+                        sampleLoading.value = false;
+                    }
+                };
+                
+                // 测试分析功能
+                const testAnalysis = async () => {
+                    try {
+                        analysisLoading.value = true;
+                        analysisError.value = '';
+                        analysisResult.value = null;
+                        
+                        console.log('开始测试分析功能...');
+                        
+                        // 使用示例数据进行测试
+                        const testProducts = [
+                            {
+                                "title": "iPhone 15 Pro Max 手机壳 透明硅胶保护套",
+                                "price": "$12.99",
+                                "rating": "4.5",
+                                "sales": "1,234",
+                                "link": "https://example.com/product1",
+                                "image": "https://example.com/image1.jpg"
+                            },
+                            {
+                                "title": "无线蓝牙耳机 降噪 运动耳机",
+                                "price": "$29.99",
+                                "rating": "4.2",
+                                "sales": "856",
+                                "link": "https://example.com/product2",
+                                "image": "https://example.com/image2.jpg"
+                            },
+                            {
+                                "title": "手机充电器 快充 多口USB充电器",
+                                "price": "$8.99",
+                                "rating": "4.7",
+                                "sales": "2,156",
+                                "link": "https://example.com/product3",
+                                "image": "https://example.com/image3.jpg"
+                            }
+                        ];
+                        
+                        console.log('测试商品数据:', testProducts);
+                        
+                        const response = await fetch(`${ANALYSIS_API_URL}/analyze-products`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ products: testProducts })
+                        });
+                        
+                        console.log('分析响应状态:', response.status);
+                        
+                        if (!response.ok) {
+                            throw new Error('分析请求失败');
+                        }
+                        
+                        const result = await response.json();
+                        console.log('分析结果:', result);
+                        
+                        if (result.success) {
+                            analysisResult.value = result.data;
+                            ElMessage.success('测试分析完成');
+                            
+                            // 延迟渲染图表，确保DOM已更新
+                            setTimeout(() => {
+                                renderCharts();
+                            }, 100);
+                        } else {
+                            throw new Error(result.message || '分析失败');
+                        }
+                        
+                    } catch (error) {
+                        console.error('测试分析出错：', error);
+                        analysisError.value = `测试分析失败：${error.message}`;
+                        ElMessage.error(`测试分析失败：${error.message}`);
+                    } finally {
+                        analysisLoading.value = false;
+                    }
+                };
+                
+                // 导出分析报告
+                const exportAnalysis = () => {
+                    if (!analysisResult.value) {
+                        ElMessage.warning('没有可导出的分析结果');
+                        return;
+                    }
+                    
+                    try {
+                        const reportData = {
+                            analysis_date: new Date().toISOString(),
+                            basic_stats: analysisResult.value.basic_stats,
+                            price_analysis: analysisResult.value.price_analysis,
+                            sales_analysis: analysisResult.value.sales_analysis,
+                            rating_analysis: analysisResult.value.rating_analysis,
+                            predictions: analysisResult.value.predictions
+                        };
+                        
+                        const blob = new Blob([JSON.stringify(reportData, null, 2)], { 
+                            type: 'application/json' 
+                        });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `analysis_report_${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        ElMessage.success('分析报告已导出');
+                    } catch (error) {
+                        ElMessage.error(`导出失败：${error.message}`);
+                    }
+                };
+                
+                // 渲染图表
+                const renderCharts = () => {
+                    if (!analysisResult.value || !analysisResult.value.chart_data) {
+                        return;
+                    }
+                    
+                    const chartData = analysisResult.value.chart_data;
+                    
+                    // 渲染价格分布图表
+                    if (priceChart.value && chartData.price_distribution) {
+                        const ctx = priceChart.value.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: chartData.price_distribution.labels,
+                                datasets: [{
+                                    data: chartData.price_distribution.data,
+                                    backgroundColor: [
+                                        '#FF6384',
+                                        '#36A2EB',
+                                        '#FFCE56',
+                                        '#4BC0C0'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    
+                    // 渲染销量分布图表
+                    if (salesChart.value && chartData.sales_distribution) {
+                        const ctx = salesChart.value.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: chartData.sales_distribution.labels,
+                                datasets: [{
+                                    label: '商品数量',
+                                    data: chartData.sales_distribution.data,
+                                    backgroundColor: '#36A2EB'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    
+                    // 渲染评分分布图表
+                    if (ratingChart.value && chartData.rating_distribution) {
+                        const ctx = ratingChart.value.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: chartData.rating_distribution.labels,
+                                datasets: [{
+                                    data: chartData.rating_distribution.data,
+                                    backgroundColor: [
+                                        '#FF6384',
+                                        '#FF9F40',
+                                        '#4BC0C0',
+                                        '#9966FF'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    }
+                                }
+                            }
+                        });
+                    }
+                };
+                
+                // 获取市场机会类型
+                const getOpportunityType = (opportunity) => {
+                    switch (opportunity) {
+                        case 'high': return 'success';
+                        case 'medium': return 'warning';
+                        case 'low': return 'danger';
+                        default: return 'info';
+                    }
+                };
+                
+                const getOpportunityText = (opportunity) => {
+                    switch (opportunity) {
+                        case 'high': return '高机会';
+                        case 'medium': return '中等机会';
+                        case 'low': return '低机会';
+                        default: return '未知';
+                    }
+                };
+                
+                // 获取竞争力类型
+                const getCompetitivenessType = (competitiveness) => {
+                    switch (competitiveness) {
+                        case 'high': return 'success';
+                        case 'medium': return 'warning';
+                        case 'low': return 'danger';
+                        default: return 'info';
+                    }
+                };
+                
+                const getCompetitivenessText = (competitiveness) => {
+                    switch (competitiveness) {
+                        case 'high': return '高竞争力';
+                        case 'medium': return '中等竞争力';
+                        case 'low': return '低竞争力';
+                        default: return '未知';
+                    }
+                };
+                
+                // 获取质量类型
+                const getQualityType = (quality) => {
+                    switch (quality) {
+                        case 'high': return 'success';
+                        case 'medium': return 'warning';
+                        case 'low': return 'danger';
+                        default: return 'info';
+                    }
+                };
+                
+                const getQualityText = (quality) => {
+                    switch (quality) {
+                        case 'high': return '高质量';
+                        case 'medium': return '中等质量';
+                        case 'low': return '低质量';
+                        default: return '未知';
+                    }
+                };
+                
+                // 组件挂载时刷新表列表
+                onMounted(() => {
+                    refreshTables();
+                });
+                
+                // 返回组件公开的属性和方法
+                return {
+                    tables,
+                    selectedTable,
+                    currentTableData,
+                    loadingTables,
+                    loadingTableData,
+                    globalLoading,
+                    errorMessage,
+                    analysisResult,
+                    analysisLoading,
+                    analysisError,
+                    sampleLoading,
+                    priceChart,
+                    salesChart,
+                    ratingChart,
+                    refreshTables,
+                    onTableSelect,
+                    startAnalysis,
+                    loadSampleData,
+                    testAnalysis,
+                    exportAnalysis,
+                    getOpportunityType,
+                    getOpportunityText,
+                    getCompetitivenessType,
+                    getCompetitivenessText,
+                    getQualityType,
+                    getQualityText
+                };
+            }
+        });
+        
+        // 注册 Element Plus 组件
+        app.use(ElementPlus);
+        
+        // 挂载应用
+        app.mount('#app');
+    </script>
+</body>
+</html>

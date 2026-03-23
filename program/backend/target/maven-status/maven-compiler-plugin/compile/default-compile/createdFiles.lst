@@ -1,0 +1,16 @@
+com/project/service/CrawlerService.class
+com/project/entity/User.class
+com/project/scheduler/CrawlerScheduler.class
+com/project/controller/CrawlerController.class
+com/project/controller/AnalysisController.class
+com/project/service/ProductService.class
+com/project/entity/UserInteraction.class
+com/project/config/ProjectSimpleConfig.class
+com/project/repository/UserInteractionRepository.class
+com/project/entity/Product.class
+com/project/Application.class
+com/project/repository/ProductRepository.class
+com/project/entity/Product$ProductBuilder.class
+com/project/repository/UserRepository.class
+com/project/controller/AlgorithmController.class
+com/project/controller/ProductController.class

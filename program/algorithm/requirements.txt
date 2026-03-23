@@ -1,0 +1,37 @@
+# 跨境电商选品系统 - 算法模块依赖
+# 数据处理
+pandas==2.1.1
+numpy==1.24.3
+scipy==1.11.1
+
+# 机器学习
+scikit-learn==1.3.0
+torch==2.0.1
+tensorflow==2.13.0
+
+# 推荐算法
+surprise==1.1.3
+implicit==0.7.2
+
+# 数据处理和特征工程
+featuretools==1.25.0
+category-encoders==2.6.1
+
+# 可视化
+matplotlib==3.7.2
+seaborn==0.12.2
+plotly==5.17.0
+
+# API服务
+fastapi==0.103.0
+uvicorn==0.23.2
+pydantic==2.1.1
+
+# 数据库连接
+psycopg2-binary==2.9.7
+sqlalchemy==2.0.19
+
+# 工具库
+tqdm==4.65.0
+joblib==1.3.2
+python-dotenv==1.0.0
